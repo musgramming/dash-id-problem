@@ -33,6 +33,8 @@ Bộ công cụ PageDirection (nằm trong utils/direction) giải quyết các 
 ```py
 from utils.direction import pdp     # Nếu muốn dễ đọc
 from utils.direction import pds     # Nếu muốn an toàn
+
+page = pdp.assign_page() # Hoặc pds.assign_page()
 ```
 
 2. Ở các layout, ví dụ:
@@ -44,7 +46,7 @@ import dash_bootstrap_components as dbc
 
 ...
 # Ví dụ sử dụng id 'input-1'
-dbc.Input(id=pds.assign_id("input-1"))
+dbc.Input(id=page.assign_id("input-1"))
 ...
 ```
 
@@ -52,8 +54,8 @@ dbc.Input(id=pds.assign_id("input-1"))
 
 ```py
 @callback(
-    Output(pds.use_id("result-display"), "children"),
-    Input(pds.use_id("input-1"), "value")
+    Output(page.use_id("result-display"), "children"),
+    Input(page.use_id("input-1"), "value")
 )
 # Hàm của bạn
 ```
