@@ -1,4 +1,4 @@
-from typing import Union, Any
+from typing import Union, Any, Dict
 
 from dash import MATCH, ALL, ALLSMALLER
 import inspect
@@ -26,7 +26,7 @@ class PageDirection:
         Sử dụng inspect.stack() để xác định file .py đang thực thi.
         """
         stack = inspect.stack()
-        frame_info = stack[2] # Layer 2 là vị trí gọi assign_page hoặc use_page
+        frame_info = stack[2]
         filename = frame_info.filename
         return os.path.basename(filename).replace(".py", "")
 
@@ -40,10 +40,15 @@ class PageDirection:
             
         Returns:
             _SingleDirection: Đối tượng quản lý ID riêng biệt cho trang đó.
+        
+        Raises:
+            Exception: Page đã được khởi tạo
         """
         page_name = page or self.__get_page_name()
-        if page_name not in self.__pages:
-            self.__pages[page_name] = _SingleDirection(page_name)
+        if page_name in self.__pages:
+            raise RuntimeError(f"Page '{page_name}' đã được đăng ký trước đó!")
+            
+        self.__pages[page_name] = _SingleDirection(page_name)
         return self.__pages[page_name]
 
 
@@ -51,9 +56,21 @@ class PageDirection:
         """
         Truy xuất bộ quản lý ID hiện có mà không làm thay đổi trạng thái đăng ký.
         Thường dùng trong các file callback hoặc module bổ trợ.
+        
+        Args:
+            page (str, optional): Tên trang thủ công. Nếu None, tự động lấy tên file.
+            
+        Returns:
+            _SingleDirection: Đối tượng quản lý ID riêng biệt cho trang đó.
+        
+        Raises:
+            Exception: Page chưa được khởi tạo        
         """
         page_name = page or self.__get_page_name()
-        return self.assign_page(page_name)
+        if page_name not in self.__pages:
+            raise LookupError(f"Không tìm thấy trang '{page_name}'. Bạn phải gọi assign_page() trước!")
+            
+        return self.__pages[page_name]
 
 
 
@@ -83,7 +100,7 @@ class _SingleDirection:
         }
 
 
-    def assign_id(self, id_name: str, is_dynamic: bool = False) -> dict:
+    def assign_id(self, id_name: str, is_dynamic: bool = False) -> Dict[str, Any]:
         """
         Đăng ký một ID mới vào hệ thống của trang.
         
@@ -92,8 +109,12 @@ class _SingleDirection:
             is_dynamic (bool): Nếu True, ID sẽ hỗ trợ cơ chế Pattern-matching.
             
         Raises:
+            Exception: Nếu id_name trống
             Exception: Nếu ID đã được đăng ký trước đó trên cùng một trang.
         """
+        if id_name is None:
+            raise Exception("Không được để ID trống")
+        
         if id_name in self.__id_registry:
             raise Exception(f"ID '{id_name}' đã được đăng ký!")
         
@@ -101,7 +122,7 @@ class _SingleDirection:
         return self.__build_dict(id_name, self.__id_registry[id_name])
 
 
-    def next_index(self, id_name: str) -> dict:
+    def next_index(self, id_name: str) -> Dict[str, Any]:
         """
         Tăng index cho một ID động.
 
@@ -112,10 +133,15 @@ class _SingleDirection:
             dict: ID với index mới đã tăng.
 
         Raises:
+            Exception: Nếu `id_name` trống
             Exception: Nếu `id_name` chưa được khai báo hoặc là ID tĩnh (static).
         """
+        if id_name is None:
+            raise Exception("Không được để ID trống")
+
         if id_name not in self.__id_registry or self.__id_registry[id_name] is None:
             raise Exception(f"ID '{id_name}' không phải là ID động.")
+        
         self.__id_registry[id_name] += 1
         return self.__build_dict(id_name, self.__id_registry[id_name])
 
@@ -131,10 +157,14 @@ class _SingleDirection:
             dict: ID với index đã giảm.
 
         Raises:
+            Exception: Nếu ID trống
             Exception: Nếu ID chưa tồn tại.
             Exception: Nếu ID là tĩnh (không có index để giảm).
             Exception: Nếu index hiện tại đang là 1 (không thể giảm thêm).
         """
+        if id_name is None:
+            raise Exception("Không được để ID trống")
+        
         if id_name not in self.__id_registry:
             raise Exception(f"ID '{id_name}' chưa tồn tại.")
 
@@ -148,7 +178,7 @@ class _SingleDirection:
         return self.__build_dict(id_name, self.__id_registry[id_name])
 
 
-    def use_id(self, id_name: str, index: any = None) -> dict:
+    def use_id(self, id_name: str, index: any = None) -> Dict[str, Any]:
         """
         Truy xuất ID để sử dụng trong Layout hoặc Callback.
 
@@ -160,8 +190,12 @@ class _SingleDirection:
             dict: ID hoàn chỉnh.
 
         Raises:
+            Exception: Nếu id_name trống        
             Exception: Nếu gọi một ID chưa từng được qua bước `assign_id`.
         """
+        
+        if id_name is None:
+            raise Exception("Không được để ID trống")
 
         if id_name not in self.__id_registry:
             raise Exception(f"Lỗi: ID '{id_name}' chưa được khai báo!")
@@ -172,16 +206,76 @@ class _SingleDirection:
 
 
     # --- Sugar Methods cho Dash Callbacks ---
-    def match(self, id_name: str): 
-        """Trả về ID dùng cho Output/Input với cơ chế dash.MATCH."""
-        return self.use_id(id_name, MATCH)
+    def match(self, id_name: str) -> Dict[str, Any]: 
+        """
+        Trả về ID dùng cho Output/Input với cơ chế dash.MATCH.
+        
+        Args:
+            id_name: Tên của id
+
+        Raises:
+            Exception: Nếu truyền id_name trống
+            Exception: Nếu gọi một id_name chưa được khởi tạo trước đó
+            Exception: Nếu gọi một id_name là ID tĩnh, khi này không sử dụng phương thức MATCH
+        """
+        if id_name is None:
+            raise Exception("Không được để ID trống")
+
+        if id_name not in self.__id_registry:
+            raise Exception(f"ID {id_name} chưa được khởi tạo")
+        
+        if self.__id_registry[id_name] is None:
+            raise Exception(f"ID {id_name} là ID tĩnh.")
+        
+        return self.__build_dict(id_name, MATCH)
         
 
-    def all(self, id_name: str): 
-        """Trả về ID dùng cho Output/Input với cơ chế dash.ALL."""
-        return self.use_id(id_name, ALL)
+    def all(self, id_name: str) -> Dict[str, Any]: 
+        """
+        Trả về ID dùng cho Output/Input với cơ chế dash.ALL.
+        
+        Args:
+            id_name: Tên của id
+
+        Returns:
+            Dict[str, Any]: Dictionary ID với trường 'index' là hằng số ALL.
+
+        Raises:
+            Exception: Nếu id_name trống
+            Exception: Nếu gọi một id_name chưa được khởi tạo trước đó
+            Exception: Nếu gọi một id_name là ID tĩnh, khi này không sử dụng phương thức ALL
+        """
+        if id_name is None:
+            raise Exception("Không được để ID trống")
+
+        if id_name not in self.__id_registry:
+            raise Exception(f"ID {id_name} chưa được khởi tạo")
+        
+        if self.__id_registry[id_name] is None:
+            raise Exception(f"ID {id_name} là ID tĩnh.")
+        
+        return self.__build_dict(id_name, ALL)
 
 
     def allsmaller(self, id_name: str): 
-        """Trả về ID dùng cho Output/Input với cơ chế dash.ALLSMALLER."""
-        return self.use_id(id_name, ALLSMALLER)
+        """
+        Trả về ID dùng cho Output/Input với cơ chế dash.ALLSMALLER.
+        
+        Args:
+            id_name: Tên của id
+
+        Raises:
+            Exception: Nếu id_name trống
+            Exception: Nếu gọi một id_name chưa được khởi tạo trước đó
+            Exception: Nếu gọi một id_name là ID tĩnh, khi này không sử dụng phương thức ALLSMALLER
+        """
+        if id_name is None:
+            raise Exception("Không được để ID trống")
+
+        if id_name not in self.__id_registry:
+            raise Exception(f"ID {id_name} chưa được khởi tạo")
+        
+        if self.__id_registry[id_name] is None:
+            raise Exception(f"ID {id_name} là ID tĩnh.")
+        
+        return self.__build_dict(id_name, ALLSMALLER)
