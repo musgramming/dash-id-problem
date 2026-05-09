@@ -95,7 +95,8 @@ class PageDirection:
             stack = inspect.stack()
             frame_info = stack[2]
             filename = frame_info.filename
-            page_name = os.path.basename(filename).replace(".py", "")
+            page_name = os.path.relpath(filename, os.getcwd()).replace(".py", "")
+            
         return _hashing(page_name)
 
 

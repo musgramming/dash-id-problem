@@ -21,14 +21,13 @@ class PageDirection:
 
 
     def __get_page_name(self) -> str:
-        """
-        [Private] Trích xuất tên module gọi hàm để tự động hóa Namespace.
-        Sử dụng inspect.stack() để xác định file .py đang thực thi.
-        """
         stack = inspect.stack()
         frame_info = stack[2]
         filename = frame_info.filename
-        return os.path.basename(filename).replace(".py", "")
+        
+        rel_path = os.path.relpath(filename, os.getcwd())
+        
+        return rel_path.replace(os.sep, ".").replace(".py", "")
 
 
     def assign_page(self, page: str = None):
