@@ -1,9 +1,10 @@
 from dash import register_page, html, Input, Output, State, callback, dash_table
 import dash_bootstrap_components as dbc 
 from utils.models.triangle import solve_triangle 
-from utils.direction import pds, pdp
+from utils.direction import PageDirection
 
-pg = pds.assign_page()
+pg = PageDirection().assign_page()
+print("DEBUG PAGE NAME:", __name__)
 
 register_page(
     __name__, 

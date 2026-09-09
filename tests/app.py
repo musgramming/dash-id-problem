@@ -3,7 +3,7 @@ import dash
 from flask import Flask 
 import dash_bootstrap_components as dbc
 
-app  = Dash(
+app = Dash(
     __name__, 
     pages_folder= "pages", 
     use_pages = True,

@@ -1,0 +1,18 @@
+# --- Python environment ---
+.venv
+.venv/
+__pycache__/
+*.py[cod]
+
+
+
+# --- Notebooks ---
+.ipynb_checkpoints/
+*.ipynb
+
+
+
+# --- SECURITY: NEVER COMMIT THESE FILES ---
+# Chứa RANDOM_SALT dùng để băm ID. Lộ file này là toang hệ thống bảo mật!
+.env
+utils/direction/.env

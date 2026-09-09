@@ -1,16 +1,16 @@
 # Mục đích của trang: Kiểm tra tính đúng đắn của phương thức ALL bằng cách cho bạn nhập số lượng ô, rồi tính tổng của chúng
 
 from dash import html, dcc, Input, Output, State, callback, register_page
+from dash import ctx
 import dash_bootstrap_components as dbc
-from utils.direction.direction_plain import PageDirection 
-from utils.direction import pds, pdp
+from utils.direction import PageDirection
 
 register_page(
     __name__, 
     path="/sum"
 )
 
-pg = pds.assign_page()
+pg = PageDirection().assign_page()
 
 layout = dbc.Container([
     html.H3("Test Tính năng ALL - Tính Tổng Động", className="text-center my-4"),
@@ -47,12 +47,12 @@ layout = dbc.Container([
     prevent_initial_call=True
 )
 def manage_inputs(add_clicks, remove_clicks, current_children):
-    from dash import ctx
     if not ctx.triggered:
         return current_children
     
     triggered_id = ctx.triggered_id 
-    page = pds.use_page() 
+    # Sửa lại chỗ này từ pds thành pg (hoặc PageDirection().use_page())
+    page = pg 
 
     if triggered_id == page.use_id("btn-add"):
         new_id = page.next_index("num-input")
@@ -66,13 +66,10 @@ def manage_inputs(add_clicks, remove_clicks, current_children):
             
     return current_children
 
-
-
-
 # 2. Callback Tính Tổng dùng ALL
 @callback(
     Output(pg.use_id("total-display"), "children"),
-    Input(pg.all("num-input"), "value") # ĐÂY LÀ PHÉP ALL "THẦN THÁNH" CỦA BẠN
+    Input(pg.all("num-input"), "value") # Sử dụng phương thức all() từ PageDirection
 )
 def update_total(values):
     if not values:
